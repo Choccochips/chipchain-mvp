@@ -12,12 +12,14 @@ import json
 # block class for container to hold data
 class Block:
     # methods
-    def __init__(self, index, timestamp, data, prevHash = ''):
+    def __init__(self, index, timestamp, data, prev_hash = ''):
         self.index = index
         self.timestamp = timestamp
         self.data = data
-        self.prevHash = prevHash
+        self.prev_hash = prev_hash
         self.hash = self.calc_hash()
 
     def calc_hash(self):
-        return hashlib.sha256(self.index + self.prevHash + self.timestamp +  str(json.dumps(self.data)))
+        # need to convert to entire to string as python is giving operand issues
+        return_string = str(self.index) + self.prev_hash + self.timestamp + str(json.dumps(self.data))
+        return hashlib.sha256(return_string.encode()).hexdigest()
