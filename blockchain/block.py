@@ -21,10 +21,10 @@ class Block:
 
         # value added to spice up hash so we can "mine" on rehash until we get 'n' number of prefix zeroes
         self.nonce = 0
-        
+
     def calc_hash(self):
         # need to convert to entire to string as python is giving operand issues
-        return_string = str(self.index) + self.prev_hash + self.timestamp + str(json.dumps(self.data))
+        return_string = str(self.index) + self.prev_hash + self.timestamp + str(json.dumps(self.data)) + str(self.nonce)
         return hashlib.sha256(return_string.encode()).hexdigest()
 
     # to avoid people spamming blocks, we add proof of work, using a set number of prefix zeros needed
