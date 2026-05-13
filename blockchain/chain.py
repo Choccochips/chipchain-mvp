@@ -7,6 +7,7 @@ import json
 
 # import Block from block.py to create chain
 from blockchain.block import Block
+from blockchain.transaction import Transaction
 
 # since we dont have CONST keyword in python, will be using Final to flag for changes in place of that
 from typing import Final
@@ -23,7 +24,7 @@ class Blockchain:
 
     # a gensis block is the first block of a blockchain and requires some special handling
     def create_genesis_block(self):
-        return Block(0, "05/12/2026", "Creation of Genesis block", "0" )
+        return Block("05/12/2026", "Creation of Genesis block", "0")
     
     def get_curr_block(self):
         return self.chain[len(self.chain) - 1]
