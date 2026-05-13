@@ -4,6 +4,9 @@ import hashlib
 # since we dont have CONST keyword in python, will be using Final to flag for changes in place of that
 from typing import Final
 
+# for keys
+from ecdsa import SigningKey, VerifyingKey, SECP256k1
+
 # replacing 'data' filler with 'transactions'
 class Transaction():
     # basic stuff for now
@@ -32,3 +35,20 @@ class Transaction():
             
         hashtx: Final[str] = self.calc_hash()
         self.signature  = signing_key.sign(hashtx.encode()).hex()
+
+    def is_valid(self):
+        # need to remember mining reward edge case on key check w/ address
+        if self.sender_address == None:
+            return True
+        
+        if not self.signature or len(self.signature) == 0:
+            raise Exception("There are no signatures in this transaction")
+        
+        try:
+            # have to use this function since we dont have private key to verify public. this is from other nodes POV
+            public_key = VerifyingKey.from_string(bytes.fromhex(self.sender_address), curve = SECP256k1)
+            # converting back into bytes to be encoded and then examined for verification
+            public_key.verify(bytes.fromhex(self.signature), self.calc_hash().encode())
+            return True
+        except:
+            return False
