@@ -8,6 +8,9 @@ import json
 # import Block from block.py to create chain
 from blockchain.block import Block
 
+# since we dont have CONST keyword in python, will be using Final to flag for changes in place of that
+from typing import Final
+
 class Blockchain:
     def __init__(self):
         self.chain = []
@@ -26,6 +29,24 @@ class Blockchain:
         new_block.hash = new_block.calc_hash()
         self.chain.append(new_block)
 
+    def is_chain_valid(self):
+        # loop through chain checking hash matches (curr into prev of next block)
+        # skipping gen block
+        for i in range(1, len(self.chain)):
+            curr_block: Final[Block] = self.chain[i]
+            prev_block: Final[Block] = self.chain[i-1]
+
+            if curr_block.hash != curr_block.calc_hash():
+                # hash is not valid
+                return False
+            
+            if curr_block.prev_hash != prev_block.hash:
+                return False
+        
+        # else things look good
+        return True
+
+
 # test run for curr blockchain code
 chip_chain = Blockchain()
 
@@ -39,7 +60,8 @@ chip_chain.add_block(block_1)
 chip_chain.add_block(block_2)
 chip_chain.add_block(block_3)
 
+print(f"Is chain valid? : {chip_chain.is_chain_valid()}")
 
 # output test
-for block in chip_chain.chain:
-    print(f"Block {block.index} | Hash: {block.hash} \nPrev: {block.prev_hash}")
+#for block in chip_chain.chain:
+#    print(f"Block {block.index} | Hash: {block.hash} \nPrev: {block.prev_hash}")
