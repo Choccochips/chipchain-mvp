@@ -8,6 +8,8 @@ import hashlib
 # needed to 'stringigy' object to then use encoding on for sha256
 import json
 
+from blockchain.transaction import Transaction
+
 # block class for container to hold data
 class Block:
     # methods
@@ -21,8 +23,10 @@ class Block:
         self.hash = self.calc_hash()
 
     def calc_hash(self):
+        # transform transactions to pass as arg
+        t_data = [t.to_dict() for t in self.transactions]
         # need to convert to entire to string as python is giving operand issues
-        return_string = str(self.prev_hash) + str(self.timestamp) + str(json.dumps(self.transactions)) + str(self.nonce)
+        return_string = str(self.prev_hash) + str(self.timestamp) + str(json.dumps(t_data)) + str(self.nonce)
         return hashlib.sha256(return_string.encode()).hexdigest()
 
     # to avoid people spamming blocks, we add proof of work, using a set number of prefix zeros needed
