@@ -49,7 +49,17 @@ class Blockchain:
         reward_owed = Transaction(None, reward_address, self.mining_reward)
         self.pending_transactions = [reward_owed]
 
-    def create_transaction(self, transaction):
+    def add_transaction(self, transaction):
+        # perform checks
+        if not transaction.sender_address or not transaction.recip_address:
+            raise Exception("Both 'seneder' and 'recipient' address must be included for a transaction!...")
+        
+        if not transaction.is_valid():
+            raise Exception("Cannot add invalid transaction to the chain!...")
+
+        # if things looks solid then we can add this to the pending transactions list to be 'released' when respective block is mined
+        self.pending_transactions.append(transaction)
+
         # add it to the list
         self.pending_transactions.append(transaction)
 
@@ -73,6 +83,10 @@ class Blockchain:
         for i in range(1, len(self.chain)):
             curr_block: Final[Block] = self.chain[i]
             prev_block: Final[Block] = self.chain[i-1]
+
+            # added checks
+            if not curr_block.has_valid_transactions():
+                return False
 
             if curr_block.hash != curr_block.calc_hash():
                 # hash is not valid
@@ -123,3 +137,6 @@ print(f"Balance of miner 1 is {chip_chain.get_balance("dummy_address_to_reward")
 print("Starting to mine...")
 chip_chain.mine_pending_transactions("dummy_address_to_reward")
 print(f"Balance of miner 1 is {chip_chain.get_balance("dummy_address_to_reward")}")
+
+
+# more testing
