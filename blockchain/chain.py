@@ -34,7 +34,7 @@ class Blockchain:
 
     # a gensis block is the first block of a blockchain and requires some special handling
     def create_genesis_block(self):
-        return Block("05/12/2026", "Creation of Genesis block", "0")
+        return Block("05/12/2026", [], "0")
     
     def get_curr_block(self):
         return self.chain[len(self.chain) - 1]
@@ -57,7 +57,7 @@ class Blockchain:
         balance = 0
 
         for block in self.chain:
-            for transaction in block.transctions:
+            for transaction in block.transactions:
                 if transaction.sender_address == address:
                     balance -= transaction.amount
                 
@@ -116,8 +116,10 @@ chip_chain.create_transaction(Transaction("address_2", "address_1", 75))
 
 # need ot create block to store transactions
 print("Starting to mine...")
-
 chip_chain.mine_pending_transactions("dummy_address_to_reward")
 
 print(f"Balance of miner 1 is {chip_chain.get_balance("dummy_address_to_reward")}")
 
+print("Starting to mine...")
+chip_chain.mine_pending_transactions("dummy_address_to_reward")
+print(f"Balance of miner 1 is {chip_chain.get_balance("dummy_address_to_reward")}")
