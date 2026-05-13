@@ -40,3 +40,14 @@ class Block:
         while self.hash[0:difficulty] != target:
             self.nonce += 1
             self.hash = self.calc_hash()
+
+    def has_valid_transactions(self):
+        # need to check if every tx is valid for a block
+        for tx in self.transactions:
+            if not tx.is_valid():
+                return False
+    
+        return True
+    
+    
+            
