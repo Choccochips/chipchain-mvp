@@ -17,10 +17,12 @@ class Block:
         self.timestamp = timestamp
         self.data = data
         self.prev_hash = prev_hash
-        self.hash = self.calc_hash()
 
         # value added to spice up hash so we can "mine" on rehash until we get 'n' number of prefix zeroes
         self.nonce = 0
+        self.hash = self.calc_hash()
+
+
 
     def calc_hash(self):
         # need to convert to entire to string as python is giving operand issues
