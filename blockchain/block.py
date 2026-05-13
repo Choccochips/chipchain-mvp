@@ -33,7 +33,10 @@ class Block:
     # to be achieved by hash before block is considered 'mined'. The more zeroes, the greater the amount
     # of tries needed to 'mine' the block
     def mine_block(self, difficulty):
-        target = '0'
+        # with python, there is a thing called string multiplication, which nth-plicates strings
+        # since we want the prefix to be n-zeroes long, we just multiply (n-plicate) the zero to match so we know
+        # what to look for when mining. Was a bug as loop was running forever since 0 != any string greater than a single 0
+        target = '0' * difficulty
         while self.hash[0:difficulty] != target:
             self.nonce += 1
             self.hash = self.calc_hash()
