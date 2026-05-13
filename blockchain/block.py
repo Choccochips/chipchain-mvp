@@ -8,14 +8,21 @@ import hashlib
 # needed to 'stringigy' object to then use encoding on for sha256
 import json
 
+# replacing 'data' filler with 'transactions'
+class Transaction():
+    # basic stuff for now
+    def __init__(self, sender_address, recip_address, amount):
+        self.sender_address = sender_address
+        self.recip_address = recip_address
+        self.amount = amount
+
 
 # block class for container to hold data
 class Block:
     # methods
-    def __init__(self, index, timestamp, data, prev_hash = ''):
-        self.index = index
+    def __init__(self, timestamp, transactions, prev_hash = ''):
         self.timestamp = timestamp
-        self.data = data
+        self.transactions = transactions
         self.prev_hash = prev_hash
 
         # value added to spice up hash so we can "mine" on rehash until we get 'n' number of prefix zeroes
@@ -26,7 +33,7 @@ class Block:
 
     def calc_hash(self):
         # need to convert to entire to string as python is giving operand issues
-        return_string = str(self.index) + self.prev_hash + self.timestamp + str(json.dumps(self.data)) + str(self.nonce)
+        return_string = str(self.prev_hash) + self.timestamp + str(json.dumps(self.transactions)) + str(self.nonce)
         return hashlib.sha256(return_string.encode()).hexdigest()
 
     # to avoid people spamming blocks, we add proof of work, using a set number of prefix zeros needed
