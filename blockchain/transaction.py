@@ -19,8 +19,8 @@ class Transaction():
     # need for serialization, will return dict
     def to_dict(self):
         return{
-            'sender': self.sender_address,
-            'recipient': self.recip_address,
+            'sender_address': self.sender_address,
+            'recip_address': self.recip_address,
             'amount': self.amount
         }
     
