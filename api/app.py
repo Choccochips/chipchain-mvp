@@ -71,5 +71,12 @@ def load_wallet():
     address = signing_key.get_verifying_key().to_string().hex()
     return jsonify({'address': address})
 
+@app.route('/generate-wallet', methods=['POST'])
+def generate_wallet():
+    key = SigningKey.generate(curve=SECP256k1)
+    private_key = key.to_string().hex()
+    public_key = key.get_verifying_key().to_string().hex()
+    return jsonify({'private_key': private_key, 'public_key': public_key})
+
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)
