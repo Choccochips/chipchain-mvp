@@ -260,6 +260,11 @@
             100% { transform: scale(1); }
         }
 
+        .btn.active-view {
+            background-color: #3f3a33;
+            color: #f7f4ef;
+            border-color: #3f3a33;
+        }
 
     </style>
 </head>
@@ -306,10 +311,10 @@
 
         <!-- Mining & Validation -->
         <div class="actions">
-            <button class="btn primary" onclick="mineBlock()">Mine Pending Transactions</button>
-            <button class="btn" onclick="validateChain()">Validate Chain</button>
-            <button class="btn" onclick="loadChain()">View Chain</button>
-            <button class="btn" onclick="loadPending()">View Pending</button>
+            <button class="btn" onclick="mineBlock()">Mine Pending Transactions</button>
+            <button class="btn view-btn" onclick="setActiveView(this); validateChain()">Validate Chain</button>
+            <button class="btn view-btn" onclick="setActiveView(this); loadChain()">View Chain</button>
+            <button class="btn view-btn" onclick="setActiveView(this); loadPending()">View Pending</button>
         </div>
 
         <div id="validation-result" style="margin-bottom: 20px;"></div>
@@ -330,6 +335,11 @@
             setTimeout(() => { msg.style.display = 'none'; }, 3000);
         }
 
+        function setActiveView(clicked) {
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active-view'));
+            clicked.classList.add('active-view');
+        }
+
         async function loadWallet() {
             const key = document.getElementById('private-key').value.trim();
             if (!key) return showMessage('Enter a private key', 'error');
@@ -344,6 +354,7 @@
                 walletAddress = data.address;
                 document.getElementById('wallet-address').textContent = walletAddress;
                 showMessage('Wallet loaded!', 'success');
+                checkBalance();
             } catch (err) {
                 showMessage('Failed to load wallet', 'error');
             }
@@ -373,6 +384,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showMessage(data.message, 'success');
+                    loadPending();
                 } else {
                     showMessage(data.message, 'error');
                 }
@@ -392,6 +404,10 @@
             });
             const data = await res.json();
             showMessage(data.message, 'success');
+            
+            // auto-refresh
+            checkBalance();
+            loadChain();
         }
 
         async function validateChain() {
