@@ -267,6 +267,61 @@
             border-color: #3f3a33;
         }
 
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #f0ebe3;
+            border-radius: 14px;
+            border: 1px solid #d6cdc0;
+            padding: 28px;
+            max-width: 600px;
+            width: 90%;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #7a7266;
+            cursor: pointer;
+        }
+        .modal-close:hover {
+            color: #3f3a33;
+        }
+        .modal-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #7a7266;
+            margin-bottom: 6px;
+        }
+        .modal-key {
+            font-family: monospace;
+            font-size: 12px;
+            background: #e8e1d6;
+            padding: 10px 12px;
+            border-radius: 8px;
+            word-break: break-all;
+            color: #3f3a33;
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
     </style>
 </head>
 <body>
@@ -291,6 +346,7 @@
             <div class="bucket-label" style="margin-top: 16px;">Balance</div>
             <div class="bucket-balance" id="balance">—</div>
             <div class="wallet-actions">
+                <button class="btn" onclick="generateWallet()">Generate New Wallet</button>
                 <button class="btn" onclick="loadWallet()">Load Wallet</button>
                 <button class="btn" onclick="checkBalance()">Check Balance</button>
             </div>
@@ -451,6 +507,23 @@
             document.getElementById('chain-data').innerHTML = html;
         }
 
+        async function generateWallet() {
+            const res = await fetch('/generate-wallet', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('private-key').value = data.private_key;
+            walletAddress = data.public_key;
+            document.getElementById('wallet-address').textContent = walletAddress;
+            checkBalance();
+
+            document.getElementById('modal-private').textContent = data.private_key;
+            document.getElementById('modal-public').textContent = data.public_key;
+            document.getElementById('wallet-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('wallet-modal').classList.remove('active');
+        }
+
         async function loadPending() {
             const res = await fetch('/pending');
             const pending = await res.json();
@@ -475,6 +548,18 @@
             document.getElementById('chain-data').innerHTML = html;
         }
     </script>
+
+    <div class="modal-overlay" id="wallet-modal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h3 style="margin-bottom: 20px; font-size: 18px;">New Wallet Generated</h3>
+        <div class="modal-label">Private Key:</div>
+        <div class="modal-key" id="modal-private"></div>
+        <div class="modal-label">Public Key:</div>
+        <div class="modal-key" id="modal-public"></div>
+        <div style="font-size: 12px; color: #8a4f49; margin-top: 4px;">Save your private key! You will lose access to this wallet without it.</div>
+    </div>
+</div>
 
 </body>
 </html>
