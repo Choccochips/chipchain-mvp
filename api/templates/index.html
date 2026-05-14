@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChipChain</title>
+    <style>
+        body {
+            background-color: #f7f4ef;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            margin: 0;
+            color: #3f3f3f;
+        }
+
+        .header {
+            background-color: #e8e1d6;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 1px solid #d6cdc0;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 5px 0 0;
+            color: #6e6e6e;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: white;
+            margin-bottom: 18px;
+            border-radius: 14px;
+            border: 1px solid #ece6dc;
+            padding: 20px;
+            transition: all 0.18s ease-out;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0px 10px 20px rgba(0,0,0,0.08);
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background: white;
+            color: #5f5a54;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid #e2d8ca;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease-out;
+        }
+
+        .btn:hover {
+            background-color: #f4efe8;
+        }
+
+        .btn.primary {
+            background-color: #d8d0c2;
+            color: #3f3f3f;
+        }
+
+        input {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #e2d8ca;
+            font-size: 14px;
+            background: white;
+            color: #3f3f3f;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .badge.valid {
+            background-color: #dcebd8;
+            color: #446344;
+        }
+
+        .badge.invalid {
+            background-color: #f0d9d5;
+            color: #8a4f49;
+        }
+
+        .balance-display {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .block-hash {
+            font-family: monospace;
+            font-size: 12px;
+            color: #888;
+            word-break: break-all;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background-color: #dcebd8;
+            color: #446344;
+        }
+
+        .message.error {
+            background-color: #f0d9d5;
+            color: #8a4f49;
+        }
+
+        #chain-data .card {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ChipChain</h1>
+    </div>
+
+    <div class="container">
+
+        <div id="status-message" class="message"></div>
+
+        <!-- Wallet Section -->
+        <div class="section-title">Wallet</div>
+        <div class="card">
+            <div class="form-group">
+                <label>Private Key</label>
+                <input type="text" id="private-key" placeholder="Paste your private key hex">
+            </div>
+            <div class="form-group">
+                <label>Your Wallet Address</label>
+                <div id="wallet-address" class="block-hash" style="min-height: 20px;">—</div>
+            </div>
+            <div style="margin-top: 12px;">
+                <button class="btn" onclick="loadWallet()">Load Wallet</button>
+                <button class="btn" onclick="checkBalance()">Check Balance</button>
+            </div>
+            <div class="balance-display" id="balance" style="display:none;"></div>
+        </div>
+
+        <!-- Send Transaction -->
+        <div class="section-title">Send Transaction</div>
+        <div class="card">
+            <div class="form-group">
+                <label>Recipient Address</label>
+                <input type="text" id="recipient" placeholder="Recipient public key">
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="amount" placeholder="0">
+            </div>
+            <button class="btn primary" onclick="sendTransaction()">Send</button>
+        </div>
+
+        <!-- Mining & Validation -->
+        <div class="actions">
+            <button class="btn primary" onclick="mineBlock()">Mine Pending Transactions</button>
+            <button class="btn" onclick="validateChain()">Validate Chain</button>
+            <button class="btn" onclick="loadChain()">View Chain</button>
+            <button class="btn" onclick="loadPending()">View Pending</button>
+        </div>
+
+        <div id="validation-result" style="margin-bottom: 20px;"></div>
+
+        <!-- Chain Display -->
+        <div id="chain-data"></div>
+
+    </div>
+
+    <script>
+        let walletAddress = '';
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('status-message');
+            msg.textContent = text;
+            msg.className = 'message ' + type;
+            msg.style.display = 'block';
+            setTimeout(() => { msg.style.display = 'none'; }, 3000);
+        }
+
+        async function loadWallet() {
+            const key = document.getElementById('private-key').value.trim();
+            if (!key) return showMessage('Enter a private key', 'error');
+
+            try {
+                const res = await fetch('/wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ private_key: key })
+                });
+                const data = await res.json();
+                walletAddress = data.address;
+                document.getElementById('wallet-address').textContent = walletAddress;
+                showMessage('Wallet loaded!', 'success');
+            } catch (err) {
+                showMessage('Failed to load wallet', 'error');
+            }
+        }
+
+        async function checkBalance() {
+            if (!walletAddress) return showMessage('Load a wallet first', 'error');
+
+            const res = await fetch('/balance/' + walletAddress);
+            const data = await res.json();
+            const bal = document.getElementById('balance');
+            bal.textContent = 'Balance: ' + data.balance;
+            bal.style.display = 'block';
+        }
+
+        async function sendTransaction() {
+            const key = document.getElementById('private-key').value.trim();
+            const recipient = document.getElementById('recipient').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+
+            if (!key || !recipient || !amount) return showMessage('Fill in all fields', 'error');
+
+            try {
+                const res = await fetch('/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ private_key: key, recipient: recipient, amount: amount })
+                });
+                const data = await res.json();
+                showMessage(data.message, 'success');
+            } catch (err) {
+                showMessage('Transaction failed', 'error');
+            }
+        }
+
+        async function mineBlock() {
+            if (!walletAddress) return showMessage('Load a wallet first', 'error');
+
+            showMessage('Mining...', 'success');
+            const res = await fetch('/mine', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: walletAddress })
+            });
+            const data = await res.json();
+            showMessage(data.message, 'success');
+        }
+
+        async function validateChain() {
+            const res = await fetch('/validate');
+            const data = await res.json();
+            document.getElementById('validation-result').innerHTML = data.valid
+                ? '<span class="badge valid">Chain is valid</span>'
+                : '<span class="badge invalid">Chain is invalid!</span>';
+        }
+
+        async function loadChain() {
+            const res = await fetch('/chain');
+            const chain = await res.json();
+            let html = '<div class="section-title">Blockchain (' + chain.length + ' blocks)</div>';
+
+            chain.forEach((block, i) => {
+                html += `
+                    <div class="card">
+                        <strong>Block ${i}</strong>
+                        <div class="block-hash" style="margin-top: 8px;">Hash: ${block.hash}</div>
+                        <div class="block-hash">Prev: ${block.prev_hash}</div>
+                        <div style="margin-top: 8px; font-size: 14px;">
+                            Transactions: ${block.transactions.length} | Nonce: ${block.nonce}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('chain-data').innerHTML = html;
+        }
+
+        async function loadPending() {
+            const res = await fetch('/pending');
+            const pending = await res.json();
+            let html = '<div class="section-title">Pending Transactions (' + pending.length + ')</div>';
+
+            if (pending.length === 0) {
+                html += '<div class="card">No pending transactions</div>';
+            } else {
+                pending.forEach(tx => {
+                    html += `
+                        <div class="card">
+                            <div class="block-hash">From: ${tx.sender_address || 'System (Mining Reward)'}</div>
+                            <div class="block-hash">To: ${tx.recip_address}</div>
+                            <div style="margin-top: 8px; font-weight: 600;">Amount: ${tx.amount}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('chain-data').innerHTML = html;
+        }
+    </script>
+
+</body>
+</html>
