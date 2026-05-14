@@ -14,6 +14,7 @@ class Transaction():
         self.sender_address = sender_address
         self.recip_address = recip_address
         self.amount = amount
+        self.signature = None # needed to initialize this 
     
     # need for serialization, will return dict
     def to_dict(self):
