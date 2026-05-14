@@ -49,5 +49,10 @@ class Block:
     
         return True
     
-    
+    def to_dict(self):
+        return{
+            'timestamp': self.timestamp,
+            'transactions': self.transactions,
+            'prev_hash': self.prev_hash
+        }
             
