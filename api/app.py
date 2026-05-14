@@ -43,13 +43,16 @@ def mine():
 # an exisitng transction (from here) to the pending list
 def create_transaction():
     data = request.get_json()
-    signing_key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve = SECP256k1)
-    sender = signing_key.get_verifying_key().to_string().hex()
+    try:
+        signing_key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
+        sender = signing_key.get_verifying_key().to_string().hex()
 
-    tx = Transaction(sender, data['recipient'], data['amount'])
-    tx.sign_transaction(signing_key)
-    chip_chain.add_transaction(tx)
-    return jsonify({'message': 'Transaction has been added!...'})
+        tx = Transaction(sender, data['recipient'], data['amount'])
+        tx.sign_transaction(signing_key)
+        chip_chain.add_transaction(tx)
+        return jsonify({'message': 'Transaction has been added!...'})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
 @app.route('/validate')
 def validate():
