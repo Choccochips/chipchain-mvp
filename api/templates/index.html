@@ -157,6 +157,110 @@
         #chain-data .card {
             cursor: pointer;
         }
+
+        /* wallet Bucket update*/
+        .wallet-bucket {
+            background: linear-gradient(145deg, #d8d0c2, #c9bfae);
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 22px;
+            border: 1px solid #b8ad9c;
+            position: relative;
+            overflow: hidden;
+        }
+        .wallet-bucket::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        .bucket-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #6e6357;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .bucket-balance {
+            font-size: 42px;
+            font-weight: 700;
+            color: #3f3a33;
+            font-family: monospace;
+        }
+        .bucket-address {
+            font-family: monospace;
+            font-size: 11px;
+            color: #8a8275;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .wallet-actions {
+            margin-top: 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Block Carousel */
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        .carousel-track {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            padding: 10px 0 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .carousel-track::-webkit-scrollbar {
+            height: 6px;
+        }
+        .carousel-track::-webkit-scrollbar-thumb {
+            background: #d6cdc0;
+            border-radius: 3px;
+        }
+        .carousel-track .card {
+            min-width: 280px;
+            max-width: 280px;
+            scroll-snap-align: start;
+            flex-shrink: 0;
+            margin-bottom: 0;
+        }
+
+        /* Validation flash */
+        .badge {
+            display: inline-block;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .badge.valid {
+            background-color: #dcebd8;
+            color: #446344;
+        }
+        .badge.invalid {
+            background-color: #f0d9d5;
+            color: #8a4f49;
+        }
+        .badge.flash {
+            animation: flashPulse 0.4s ease;
+        }
+        @keyframes flashPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+
     </style>
 </head>
 <body>
@@ -171,20 +275,19 @@
 
         <!-- Wallet Section -->
         <div class="section-title">Wallet</div>
-        <div class="card">
+        <div class="wallet-bucket">
             <div class="form-group">
                 <label>Private Key</label>
                 <input type="text" id="private-key" placeholder="Paste your private key hex">
             </div>
-            <div class="form-group">
-                <label>Your Wallet Address</label>
-                <div id="wallet-address" class="block-hash" style="min-height: 20px;">—</div>
-            </div>
-            <div style="margin-top: 12px;">
+            <div class="bucket-label">Wallet Address</div>
+            <div id="wallet-address" class="bucket-address">—</div>
+            <div class="bucket-label" style="margin-top: 16px;">Balance</div>
+            <div class="bucket-balance" id="balance">—</div>
+            <div class="wallet-actions">
                 <button class="btn" onclick="loadWallet()">Load Wallet</button>
                 <button class="btn" onclick="checkBalance()">Check Balance</button>
             </div>
-            <div class="balance-display" id="balance" style="display:none;"></div>
         </div>
 
         <!-- Send Transaction -->
@@ -251,9 +354,7 @@
 
             const res = await fetch('/balance/' + walletAddress);
             const data = await res.json();
-            const bal = document.getElementById('balance');
-            bal.textContent = 'Balance: ' + data.balance;
-            bal.style.display = 'block';
+            document.getElementById('balance').textContent = data.balance;
         }
 
         async function sendTransaction() {
@@ -270,7 +371,11 @@
                     body: JSON.stringify({ private_key: key, recipient: recipient, amount: amount })
                 });
                 const data = await res.json();
-                showMessage(data.message, 'success');
+                if (res.ok) {
+                    showMessage(data.message, 'success');
+                } else {
+                    showMessage(data.message, 'error');
+                }
             } catch (err) {
                 showMessage('Transaction failed', 'error');
             }
@@ -292,29 +397,40 @@
         async function validateChain() {
             const res = await fetch('/validate');
             const data = await res.json();
-            document.getElementById('validation-result').innerHTML = data.valid
-                ? '<span class="badge valid">Chain is valid</span>'
-                : '<span class="badge invalid">Chain is invalid!</span>';
+            const el = document.getElementById('validation-result');
+            
+            const badgeClass = data.valid ? 'valid' : 'invalid';
+            const label = data.valid ? 'Chain is valid' : 'Chain is invalid!';
+            
+            el.innerHTML = `<span class="badge ${badgeClass}" id="validate-badge">${label}</span>`;
+            
+            // flash animation on every click
+            const badge = document.getElementById('validate-badge');
+            badge.classList.remove('flash');
+            void badge.offsetWidth; // force reflow
+            badge.classList.add('flash');
         }
 
         async function loadChain() {
             const res = await fetch('/chain');
             const chain = await res.json();
             let html = '<div class="section-title">Blockchain (' + chain.length + ' blocks)</div>';
+            html += '<div class="carousel-wrapper"><div class="carousel-track">';
 
             chain.forEach((block, i) => {
                 html += `
                     <div class="card">
                         <strong>Block ${i}</strong>
-                        <div class="block-hash" style="margin-top: 8px;">Hash: ${block.hash}</div>
-                        <div class="block-hash">Prev: ${block.prev_hash}</div>
+                        <div class="block-hash" style="margin-top: 8px;">Hash: ${block.hash.substring(0, 20)}...</div>
+                        <div class="block-hash">Prev: ${block.prev_hash.substring(0, 20)}...</div>
                         <div style="margin-top: 8px; font-size: 14px;">
-                            Transactions: ${block.transactions.length} | Nonce: ${block.nonce}
+                            Txns: ${block.transactions.length} | Nonce: ${block.nonce}
                         </div>
                     </div>
                 `;
             });
 
+            html += '</div></div>';
             document.getElementById('chain-data').innerHTML = html;
         }
 
