@@ -42,7 +42,7 @@ class Blockchain:
         return self.chain[len(self.chain) - 1]
 
     def mine_pending_transactions(self, reward_address):
-        new_block = Block(time.time(), self.pending_transactions)
+        new_block = Block(time.time(), self.pending_transactions, self.get_curr_block().hash)
         new_block.mine_block(self.difficulty)
         print("Block has been mined!...")
         self.chain.append(new_block)
