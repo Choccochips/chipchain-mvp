@@ -36,8 +36,11 @@ class Blockchain:
 
     # a gensis block is the first block of a blockchain and requires some special handling
     def create_genesis_block(self):
-        return Block("05/12/2026", [], "0")
-    
+        # need to harcode a starter wallet for testing
+        start_tx = Transaction(None, "7d077faca9b85e2feb19331266baa0ca59751ad6521e8958e85165510c4ad5ed9dc2c35d8975b049faf54c2ecf12ac3c667a2908674ade1297de471236f754a2", 1000)
+
+        return Block("05/14/2026", [start_tx], "0")
+
     def get_curr_block(self):
         return self.chain[len(self.chain) - 1]
 
