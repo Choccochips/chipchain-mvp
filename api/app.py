@@ -54,7 +54,7 @@ def create_transaction():
 @app.route('/validate')
 def validate():
     is_valid = chip_chain.is_chain_valid()
-    return jsonify({'message': is_valid})
+    return jsonify({'valid': is_valid})
 
 @app.route('/pending')
 def pending():
