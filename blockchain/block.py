@@ -52,7 +52,9 @@ class Block:
     def to_dict(self):
         return{
             'timestamp': self.timestamp,
-            'transactions': self.transactions,
-            'prev_hash': self.prev_hash
+            'transactions': [t.to_dict() for t in self.transactions],
+            'prev_hash': self.prev_hash,
+            'hash': self.hash,
+            'nonce': self.nonce
         }
             
