@@ -61,5 +61,12 @@ def pending():
     pending = [tx.to_dict() for tx in chip_chain.pending_transactions]
     return jsonify(pending)
 
+@app.route('/wallet', methods=['POST'])
+def load_wallet():
+    data = request.get_json()
+    signing_key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
+    address = signing_key.get_verifying_key().to_string().hex()
+    return jsonify({'address': address})
+
 if __name__ == '__main__':
     app.run(debug = True)
