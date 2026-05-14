@@ -38,7 +38,7 @@ class Transaction():
 
     def is_valid(self):
         # need to remember mining reward edge case on key check w/ address
-        if self.sender_address == None:
+        if self.sender_address is None:
             return True
         
         if not self.signature or len(self.signature) == 0:

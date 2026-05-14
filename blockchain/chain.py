@@ -124,27 +124,27 @@ Various tests for output while developing
 
 
 # more testing
-my_key = SigningKey.from_string(bytes.fromhex("327e1c6b4137a0b805f4dd0563483fb922612d96b1a92fd2ef7f5a2e58f06cc0"), curve = SECP256k1)
-my_wallet = my_key.get_verifying_key().to_string().hex() 
+#my_key = SigningKey.from_string(bytes.fromhex("327e1c6b4137a0b805f4dd0563483fb922612d96b1a92fd2ef7f5a2e58f06cc0"), curve = SECP256k1)
+#my_wallet = my_key.get_verifying_key().to_string().hex() 
 
 # test run for curr blockchain code
-chip_chain = Blockchain()
+#chip_chain = Blockchain()
 
 # create new tx
-tx_1 = Transaction(my_wallet, 'public_key_goes_here', 100)
+#tx_1 = Transaction(my_wallet, 'public_key_goes_here', 100)
 # sign tx
-tx_1.sign_transaction(my_key)
-chip_chain.add_transaction(tx_1)
+#tx_1.sign_transaction(my_key)
+#chip_chain.add_transaction(tx_1)
 
-print("\nStarting miner...\n")
-chip_chain.mine_pending_transactions(my_wallet)
+#print("\nStarting miner...\n")
+#chip_chain.mine_pending_transactions(my_wallet)
 
-print(f"\nBalance of wallet is {chip_chain.get_balance(my_wallet)}")
+#print(f"\nBalance of wallet is {chip_chain.get_balance(my_wallet)}")
 
-print("\nStarting miner again...\n")
-chip_chain.mine_pending_transactions(my_wallet)
+#print("\nStarting miner again...\n")
+#chip_chain.mine_pending_transactions(my_wallet)
 
-print(f"\nBalance of wallet is {chip_chain.get_balance(my_wallet)}")
+#print(f"\nBalance of wallet is {chip_chain.get_balance(my_wallet)}")
 
 
 # chip_chain.create_transaction(Transaction("address_1","address_2", 100 ))
