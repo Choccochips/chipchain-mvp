@@ -59,6 +59,10 @@ class Blockchain:
         if not transaction.is_valid():
             raise Exception("Cannot add invalid transaction to the chain!...")
 
+        # need to check balance to see if there is enough to actually send
+        if self.get_balance(transaction.sender_address) < transaction.amount:
+            raise Exception ("Insufficient funds!...") 
+
         # if things looks solid then we can add this to the pending transactions list to be 'released' when respective block is mined
         self.pending_transactions.append(transaction)
 
