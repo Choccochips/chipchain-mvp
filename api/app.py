@@ -38,7 +38,8 @@ def mine():
     chip_chain.mine_pending_transactions(reward_address)
     return jsonify({'message': 'Block has been mined!...'})
 
-@app.route('/transaction', methods = ['POST'])
+
+@app.route('/transaction', methods=['POST'])
 # note difference here from 'add', we are creating and know the params we need vs just adding
 # an exisitng transction (from here) to the pending list
 def create_transaction():
@@ -47,10 +48,11 @@ def create_transaction():
         signing_key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
         sender = signing_key.get_verifying_key().to_string().hex()
 
-        tx = Transaction(sender, data['recipient'], data['amount'])
+        parent_hash = data.get('parent_tx_hash')
+        tx = chip_chain.create_tracked_transaction(sender, data['recipient'], data['amount'], parent_hash)
         tx.sign_transaction(signing_key)
         chip_chain.add_transaction(tx)
-        return jsonify({'message': 'Transaction has been added!...'})
+        return jsonify({'message': 'Transaction added!', 'tx_hash': tx.calc_hash()})
     except Exception as e:
         return jsonify({'message': str(e)}), 400
 
@@ -77,6 +79,35 @@ def generate_wallet():
     private_key = key.to_string().hex()
     public_key = key.get_verifying_key().to_string().hex()
     return jsonify({'private_key': private_key, 'public_key': public_key})
+
+@app.route('/trail/<tx_hash>')
+def get_trail(tx_hash):
+    tx = chip_chain.find_transaction(tx_hash)
+    if tx:
+        return jsonify({
+            'hash': tx.calc_hash(),
+            'trail': tx.trail,
+            'sender': tx.sender_address,
+            'recipient': tx.recip_address,
+            'amount': tx.amount,
+            'parent': tx.parent_tx_hash
+        })
+    return jsonify({'message': 'Transaction not found'}), 404
+
+@app.route('/tx-hashes')
+def get_tx_hashes():
+    hashes = []
+    for block in chip_chain.chain:
+        for tx in block.transactions:
+            hashes.append({
+                'tx_hash': tx.calc_hash(),
+                'sender': tx.sender_address,
+                'recipient': tx.recip_address,
+                'amount': tx.amount,
+                'trail': tx.trail
+            })
+    return jsonify(hashes)
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)

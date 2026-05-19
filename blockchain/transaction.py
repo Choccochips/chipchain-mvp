@@ -10,10 +10,13 @@ from ecdsa import SigningKey, VerifyingKey, SECP256k1
 # replacing 'data' filler with 'transactions'
 class Transaction():
     # basic stuff for now
-    def __init__(self, sender_address, recip_address, amount):
+    def __init__(self, sender_address, recip_address, amount, parent_tx_hash=None, trail = None):
         self.sender_address = sender_address
         self.recip_address = recip_address
         self.amount = amount
+        # adding trail here for provenance chain implementation. Will keep record off everyone involved so far
+        self.parent_tx_hash = parent_tx_hash
+        self.trail = trail or []
         self.signature = None # needed to initialize this 
     
     # need for serialization, will return dict
@@ -21,12 +24,15 @@ class Transaction():
         return{
             'sender_address': self.sender_address,
             'recip_address': self.recip_address,
-            'amount': self.amount
+            'amount': self.amount,
+            # adding trail fields
+            'parent_tx_hash': self.parent_tx_hash,
+            'trail': self.trail
         }
     
-    def calc_hash(self)-> str: # type hint to stop pylance complaining in sign transaction
-        # set up string so we can hash it
-        return_string = str(self.sender_address) + str(self.recip_address) + str(self.amount)
+    def calc_hash(self) -> str: # type hint to stop pylance complaining in sign transaction
+        # set up string so we can hash it, now including parent tx and trail for provenance tracking
+        return_string = str(self.sender_address) + str(self.recip_address) + str(self.amount) + str(self.parent_tx_hash) + str(self.trail)
         return hashlib.sha256(return_string.encode()).hexdigest()
 
     def sign_transaction(self, signing_key): # remember signing key = private key and we can get public key from it

@@ -103,6 +103,37 @@ class Blockchain:
         
         # else things look good
         return True
+    
+    def create_tracked_transaction(self, sender, recipient, amount, parent_tx_hash=None):
+        trail = []
+
+        if not parent_tx_hash and sender:
+            # automatically find the most recent transaction where sender received coins
+            for block in reversed(self.chain):
+                for tx in reversed(block.transactions):
+                    if tx.recip_address == sender and tx.sender_address is not None:
+                        parent_tx_hash = tx.calc_hash()
+                        break
+                if parent_tx_hash:
+                    break
+
+        if parent_tx_hash:
+            parent_tx = self.find_transaction(parent_tx_hash)
+            if parent_tx:
+                trail = parent_tx.trail.copy()
+
+        if sender and sender not in trail:
+            trail.append(sender)
+
+        return Transaction(sender, recipient, amount, parent_tx_hash, trail)
+    
+    # uses hash to find a tx
+    def find_transaction(self, tx_hash):
+        for block in self.chain:
+            for tx in block.transactions:
+                if tx.calc_hash() == tx_hash:
+                    return tx
+        return None
 
 
 
