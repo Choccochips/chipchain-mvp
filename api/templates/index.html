@@ -322,6 +322,108 @@
             line-height: 1.5;
         }
 
+        /* ── Provenance Trail ── */
+        .trail-section {
+            margin-top: 10px;
+        }
+
+        .trail-picker {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 20px;
+        }
+        .trail-picker .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .trail-picker select {
+            margin-bottom: 0;
+        }
+        .trail-picker .btn {
+            flex-shrink: 0;
+            height: 42px;
+        }
+
+        /* Chain visualization */
+        .trail-chain {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            overflow-x: auto;
+            padding: 20px 0 24px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .trail-chain::-webkit-scrollbar {
+            height: 6px;
+        }
+        .trail-chain::-webkit-scrollbar-thumb {
+            background: #d6cdc0;
+            border-radius: 3px;
+        }
+
+        .trail-node {
+            flex-shrink: 0;
+            width: 180px;
+            background: white;
+            border: 2px solid #e2d8ca;
+            border-radius: 14px;
+            padding: 16px;
+            text-align: center;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        .trail-node:hover {
+            transform: translateY(-3px);
+            box-shadow: 0px 8px 16px rgba(0,0,0,0.08);
+        }
+        .trail-node.origin {
+            border-color: #b8ad9c;
+            background: linear-gradient(145deg, #d8d0c2, #c9bfae);
+        }
+        .trail-node.current {
+            border-color: #446344;
+            background: #dcebd8;
+        }
+        .trail-node-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7a7266;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .trail-node-address {
+            font-family: monospace;
+            font-size: 11px;
+            color: #3f3a33;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+        .trail-node-amount {
+            margin-top: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            color: #3f3a33;
+        }
+
+        .trail-arrow {
+            flex-shrink: 0;
+            width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #b8ad9c;
+            font-size: 20px;
+        }
+
+        .trail-empty {
+            text-align: center;
+            color: #8a8275;
+            padding: 30px;
+            font-size: 14px;
+        }
+
     </style>
 </head>
 <body>
@@ -372,6 +474,7 @@
             <button class="btn view-btn" onclick="setActiveView(this); validateChain()">Validate Chain</button>
             <button class="btn view-btn" onclick="setActiveView(this); loadChain()">View Chain</button>
             <button class="btn view-btn" onclick="setActiveView(this); loadPending()">View Pending</button>
+            <button class="btn view-btn" onclick="setActiveView(this); loadTrailView()">Provenance Trail</button>
         </div>
 
         <div id="validation-result" style="margin-bottom: 20px;"></div>
@@ -547,6 +650,102 @@
 
             document.getElementById('chain-data').innerHTML = html;
         }
+
+        async function loadTrailView() {
+        const res = await fetch('/tx-hashes');
+        const txList = await res.json();
+
+        let html = '<div class="trail-section">';
+        html += '<div class="section-title">Provenance Trail</div>';
+
+        if (txList.length === 0) {
+            html += '<div class="trail-empty">No transactions yet. Send some coins and mine a block first.</div>';
+            html += '</div>';
+            document.getElementById('chain-data').innerHTML = html;
+            return;
+        }
+
+        // dropdown to pick a transaction
+        html += '<div class="trail-picker">';
+        html += '<div class="form-group"><label>Select Transaction</label>';
+        html += '<select id="trail-select" onchange="showTrail(this.value)">';
+        html += '<option value="">Choose a transaction...</option>';
+        txList.forEach(tx => {
+            const from = tx.sender ? tx.sender.substring(0, 10) + '...' : 'System';
+            const to = tx.recipient.substring(0, 10) + '...';
+            html += `<option value="${tx.tx_hash}">${tx.amount} coins | ${from} → ${to}</option>`;
+        });
+        html += '</select></div></div>';
+
+        // container for the trail visualization
+        html += '<div id="trail-display"><div class="trail-empty">Select a transaction above to view its provenance chain.</div></div>';
+        html += '</div>';
+
+        document.getElementById('chain-data').innerHTML = html;
+    }
+
+    async function showTrail(txHash) {
+        if (!txHash) {
+            document.getElementById('trail-display').innerHTML = '<div class="trail-empty">Select a transaction above to view its provenance chain.</div>';
+            return;
+        }
+
+        const res = await fetch('/trail/' + txHash);
+        const data = await res.json();
+
+        if (!res.ok) {
+            document.getElementById('trail-display').innerHTML = '<div class="trail-empty">Transaction not found.</div>';
+            return;
+        }
+
+        let html = '';
+
+        // transaction info card
+        html += '<div class="card" style="margin-bottom: 20px;">';
+        html += '<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">';
+        html += '<div>';
+        html += '<div style="font-weight: 700; font-size: 20px;">' + data.amount + ' coins</div>';
+        html += '<div class="block-hash" style="margin-top: 4px;">Hash: ' + data.hash + '</div>';
+        if (data.parent) {
+            html += '<div class="block-hash">Parent: ' + data.parent + '</div>';
+        }
+        html += '</div>';
+        const trailLen = data.trail ? data.trail.length : 0;
+        html += '<span class="badge valid">' + trailLen + ' hop' + (trailLen !== 1 ? 's' : '') + ' in trail</span>';
+        html += '</div></div>';
+
+        // trail visualization
+        if (trailLen === 0) {
+            html += '<div class="trail-empty">This transaction has no prior history — it originated here.</div>';
+        } else {
+            html += '<div class="trail-chain">';
+
+            // show each address in the trail (oldest first)
+            data.trail.forEach((addr, i) => {
+                const isFirst = i === 0;
+                const nodeClass = isFirst ? 'trail-node origin' : 'trail-node';
+                const label = isFirst ? 'Origin' : 'Hop ' + i;
+                html += '<div class="' + nodeClass + '">';
+                html += '<div class="trail-node-label">' + label + '</div>';
+                html += '<div class="trail-node-address">' + addr.substring(0, 20) + '...' + addr.substring(addr.length - 10) + '</div>';
+                html += '</div>';
+                html += '<div class="trail-arrow">→</div>';
+            });
+
+            // current recipient
+            html += '<div class="trail-node current">';
+            html += '<div class="trail-node-label">Current</div>';
+            html += '<div class="trail-node-address">' + data.recipient.substring(0, 20) + '...' + data.recipient.substring(data.recipient.length - 10) + '</div>';
+            html += '<div class="trail-node-amount">' + data.amount + ' coins</div>';
+            html += '</div>';
+
+            html += '</div>';
+        }
+
+        document.getElementById('trail-display').innerHTML = html;
+    }
+
+
     </script>
 
     <div class="modal-overlay" id="wallet-modal">
