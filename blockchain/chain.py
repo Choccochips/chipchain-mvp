@@ -59,21 +59,6 @@ class Blockchain:
         reward_owed = Transaction(None, reward_address, self.mining_reward)
         self.pending_transactions = [reward_owed]
 
-    def add_transaction(self, transaction):
-        # perform checks
-        if not transaction.sender_address or not transaction.recip_address:
-            raise Exception("Both 'seneder' and 'recipient' address must be included for a transaction!...")
-        
-        if not transaction.is_valid():
-            raise Exception("Cannot add invalid transaction to the chain!...")
-
-        # need to check balance to see if there is enough to actually send
-        if self.get_balance(transaction.sender_address) < transaction.amount:
-            raise Exception ("Insufficient funds!...") 
-
-        # if things looks solid then we can add this to the pending transactions list to be 'released' when respective block is mined
-        self.pending_transactions.append(transaction)
-
     def get_balance(self,address):
         balance = 0
 
@@ -160,8 +145,48 @@ class Blockchain:
             self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address)
         else:
             raise Exception("Smart contract is not present!")
+        
 
+    def add_transaction(self, transaction):
+        # check type of contract and proceed accordingly
+        match transaction.tx_type:
+            case 'transfer':
+                # perform checks
+                if not transaction.sender_address or not transaction.recip_address:
+                    raise Exception("Both 'seneder' and 'recipient' address must be included for a transaction!...")
+                
+                if not transaction.is_valid():
+                    raise Exception("Cannot add invalid transaction to the chain!...")
 
+                # need to check balance to see if there is enough to actually send
+                if self.get_balance(transaction.sender_address) < transaction.amount:
+                    raise Exception ("Insufficient funds!...") 
+
+                # if things looks solid then we can add this to the pending transactions list to be 'released' when respective block is mined
+                self.pending_transactions.append(transaction)
+            case 'deploy_contract':
+                # same boiler tx check 
+                if not transaction.is_valid():
+                    raise Exception("Cannot add invalid contract to the chain!...")
+                # make sure code is present
+                if not transaction.contract_code:
+                    raise Exception("There is no code to execute!...")
+                self.deploy_contract(transaction)
+                # need to append it now to list of 'tx's
+                self.pending_transactions.append(transaction)
+            case 'call_contract':
+                if not transaction.is_valid():
+                    raise Exception("Cannot add invalid contract to the chain!...")
+                if not transaction.contract_address:
+                    raise Exception("There is no contract address!...")
+                if not transaction.function_name:
+                    raise Exception("There is no contract name!...")
+                # if we pass the checks then we will call contract and add to pending
+                self.call_contract(transaction)
+                self.pending_transactions.append(transaction)
+            case _ :
+                raise Exception("Unknown contract type!...")
+            
 
 
 """
