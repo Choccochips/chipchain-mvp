@@ -9,8 +9,10 @@ import json
 from blockchain.block import Block
 from blockchain.transaction import Transaction
 
+from blockchain.smart_contracts import SmartContract
+
 # since we dont have CONST keyword in python, will be using Final to flag for changes in place of that
-from typing import Final
+from typing import Final # -- drop this later. dont think we need it
 
 # for timestamp on mining_reward part
 import time
@@ -30,6 +32,9 @@ class Blockchain:
         # Transaction related portion of chain
         # need a bucket for pending transactions while blocks are mined
         self.pending_transactions = []
+
+        # dict to hold and search contracts
+        self.smart_contracts = {}
 
         # set up reward (coins later)
         self.mining_reward = 100
@@ -134,6 +139,28 @@ class Blockchain:
                 if tx.calc_hash() == tx_hash:
                     return tx
         return None
+    
+    # smart contract methods
+    def deploy_contract(self,transaction):
+        contract_address = transaction.calc_hash()
+        code = transaction.contract_code
+        sender = transaction.sender_address
+        created_contract = SmartContract(contract_address, code,{},  sender)
+
+        # add to stored contracts (dict)
+        self.smart_contracts[contract_address] = created_contract
+        return contract_address # for user to know
+    
+    def call_contract(self, transaction):
+        #  def execute(self, func_name, args, caller):
+        addy = transaction.contract_address
+        # look for it in dict
+        if addy in self.smart_contracts:
+            # if we find the address we will execute the code
+            self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address)
+        else:
+            raise Exception("Smart contract is not present!")
+
 
 
 
