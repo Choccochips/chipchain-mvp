@@ -35,7 +35,7 @@ class Blockchain:
 
         # dict to hold and search contracts
         self.smart_contracts = {}
-
+        
         # set up reward (coins later)
         self.mining_reward = 100
 
