@@ -29,7 +29,7 @@ def mint(state, args, caller):
 # stuff it into a dict for later use
 contract_code = {
     'get_balance': get_balance,
-    'mint': mint
+    'mint': mint 
 }
 
 # creating a transaction
