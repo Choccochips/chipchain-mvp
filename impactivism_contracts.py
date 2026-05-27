@@ -122,7 +122,7 @@ escrow_id = chain1.add_transaction(tx_2) # will need this ID later
 chain1.mine_pending_transactions(wallet)
 
 # one more impact
-tx_3 = Transaction(wallet, None, 0, contract_address=contract_address, tx_type= 'call_contract', function_name='release_escrow', function_args={'escrow_id': escrow_id})
+tx_3 = Transaction(wallet, None, 0, contract_address=contract_address, tx_type= 'call_contract', function_name='refund', function_args={'escrow_id': escrow_id})
 tx_3.sign_transaction(key)
 chain1.add_transaction(tx_3)
 chain1.mine_pending_transactions(wallet)
