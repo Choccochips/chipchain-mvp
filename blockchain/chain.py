@@ -35,7 +35,7 @@ class Blockchain:
 
         # dict to hold and search contracts
         self.smart_contracts = {}
-        
+
         # set up reward (coins later)
         self.mining_reward = 100
 
@@ -142,7 +142,7 @@ class Blockchain:
         # look for it in dict
         if addy in self.smart_contracts:
             # if we find the address we will execute the code
-            self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address)
+            return self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address)
         else:
             raise Exception("Smart contract is not present!")
         
@@ -182,8 +182,9 @@ class Blockchain:
                 if not transaction.function_name:
                     raise Exception("There is no contract name!...")
                 # if we pass the checks then we will call contract and add to pending
-                self.call_contract(transaction)
+                result = self.call_contract(transaction)
                 self.pending_transactions.append(transaction)
+                return result
             case _ :
                 raise Exception("Unknown contract type!...")
             
