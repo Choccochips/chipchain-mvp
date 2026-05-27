@@ -118,11 +118,8 @@ chain1.mine_pending_transactions(wallet) # now that smart contract should be dep
 contract_address = tx_1.calc_hash() # to know which contract to call w/ address
 tx_2 = Transaction(wallet, None, 0, contract_address=contract_address, tx_type= 'call_contract', function_name='create_escrow', function_args={'recipient': wallet2, 'value': 500})
 tx_2.sign_transaction(key)
-chain1.add_transaction(tx_2)
+escrow_id = chain1.add_transaction(tx_2) # will need this ID later
 chain1.mine_pending_transactions(wallet)
-
-# we will need to get the escrow_id to then release the funds, we know it gets returned from executing the function. store address
-contract = chain1.smart_contracts[contract_address]
 
 # one more impact
 tx_3 = Transaction(wallet, None, 0, contract_address=contract_address, tx_type= 'call_contract', function_name='release_escrow', function_args={'escrow_id': escrow_id})
@@ -131,7 +128,11 @@ chain1.add_transaction(tx_3)
 chain1.mine_pending_transactions(wallet)
 
 # output 
-contract = chain1.smart_contracts[contract_address]
-print(f"History: ", contract.execute('get_history', {}, wallet))
-print(f"Total impact: ", contract.execute('get_value_add', {}, wallet))
+# contract = chain1.smart_contracts[contract_address]
+# print(f"History: ", contract.execute('get_history', {}, wallet))
+# print(f"Total impact: ", contract.execute('get_value_add', {}, wallet))
 
+# outpur for escrow contracts
+contract = chain1.smart_contracts[contract_address]
+escrow = contract.state[escrow_id]
+print(f"Escrow: {escrow}")
