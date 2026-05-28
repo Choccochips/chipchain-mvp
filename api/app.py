@@ -6,6 +6,10 @@ from blockchain.block import Block
 from blockchain.chain import Blockchain
 from blockchain.transaction import Transaction
 
+# need to import 
+from blockchain.contracts.escrow import contract_code as escrow_code
+from blockchain.contracts.impact import contract_code as impact_code
+
 # keys
 from ecdsa import SigningKey, SECP256k1
 
@@ -108,6 +112,66 @@ def get_tx_hashes():
             })
     return jsonify(hashes)
 
+# smart contract logic
+@app.route('/contract/deploy', methods = ['POST'])
+def deploy_contract():
+    data = request.get_json()
+    try:
+        key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve = SECP256k1)
+        sender = key.get_verifying_key().to_string().hex()
+
+        # make sure you got the right contract code
+        if data['contract_type'] == 'impact':
+            code = impact_code
+        elif data['contract_type'] ==  'escrow':
+            code = escrow_code
+        
+        # if neither of the options just return error
+        else:
+            return jsonify({'message': 'Unknown Contract'}), 400
+
+        # set up tx for deployment
+        tx = Transaction(sender, None, 0, tx_type='deploy_contract', contract_code = code)
+        # sign off on tx
+        tx.sign_transaction(key)
+        chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(sender)
+        # get address
+        contract_address = tx.calc_hash()
+
+        # get the right contract code
+
+        return jsonify({'message': 'Contract has been deployed!...', 'Contract Address: ': contract_address})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+@app.route('/contract/call', methods = ['POST'])
+def call_contract():
+    data = request.get_json()
+
+    try:
+
+        key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve = SECP256k1)
+        wallet = key.get_verifying_key().to_string().hex()
+
+        # create a call tx 
+        tx = Transaction(wallet, None, 0, tx_type = 'call_contract', contract_address=data['contract_address'],function_name= data['function_name'], function_args=data.get('function_args', {}))
+        tx.sign_transaction(key)
+        result = chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(wallet)
+
+        return jsonify({'message': 'Contract has been called!...', 'Result: ': result})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+
+@app.route('/contract/<address>/state')
+def get_contract_state(address):
+    # check if contract exists in smart contracts
+    if address in chip_chain.smart_contracts:
+        return jsonify(chip_chain.smart_contracts[address].state)
+    return jsonify({'message': 'Smart contract not found!...'}), 400
+        
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)
