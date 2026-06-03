@@ -22,15 +22,19 @@ class Block:
         self.nonce = 0
         self.hash = self.calc_hash()
 
+    def to_dict(self):
+        return{
+            'timestamp': self.timestamp,
+            'transactions': [t.to_dict() for t in self.transactions],
+            'prev_hash': self.prev_hash,
+            'hash': self.hash,
+            'nonce': self.nonce
+        }
+            
     def calc_hash(self):
         # transform transactions to pass as arg
         t_data = []
-        for t in self.transactions:
-            t_data.append({
-                'sender': t.sender_address,
-                'recipient': t.recip_address,
-                'amount': t.amount
-            })
+        t_data = [t.to_dict() for t in self.transactions]
         # need to convert to entire to string as python is giving operand issues
         return_string = str(self.prev_hash) + str(self.timestamp) + str(json.dumps(t_data)) + str(self.nonce)
         return hashlib.sha256(return_string.encode()).hexdigest()
@@ -55,12 +59,3 @@ class Block:
     
         return True
     
-    def to_dict(self):
-        return{
-            'timestamp': self.timestamp,
-            'transactions': [t.to_dict() for t in self.transactions],
-            'prev_hash': self.prev_hash,
-            'hash': self.hash,
-            'nonce': self.nonce
-        }
-            
