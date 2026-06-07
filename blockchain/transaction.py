@@ -25,19 +25,18 @@ class Transaction():
         self.function_name = function_name
         self.function_args = function_args
 
-    
     # need for serialization, will return dict
     def to_dict(self):
-        return{
+        return {
             'sender_address': self.sender_address,
             'recip_address': self.recip_address,
             'amount': self.amount,
             # adding trail fields
             'parent_tx_hash': self.parent_tx_hash,
             'trail': self.trail,
-            # added for smart contracts
             'tx_type': self.tx_type,
-            'contract_code': self.contract_code,
+            # added for smart contracts
+            'contract_code': list(self.contract_code.keys()) if isinstance(self.contract_code, dict) else self.contract_code,
             'contract_address': self.contract_address,
             'function_name': self.function_name,
             'function_args': self.function_args
