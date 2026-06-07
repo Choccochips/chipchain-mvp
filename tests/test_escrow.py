@@ -3,48 +3,62 @@
 This file will be used for testing
 
 """
-# imports
 from blockchain.chain import Blockchain
 from blockchain.transaction import Transaction
-from ecdsa import SigningKey, VerifyingKey, SECP256k1
-
 from blockchain.contracts.escrow import contract_code
+from ecdsa import SigningKey, SECP256k1
+from tests.utils import log, header
 
-# create a blockchain instance
-chain1 = Blockchain()
+NAME = "Escrow smart contract"
 
-# set up some wallet for the testing
-key = SigningKey.generate(curve=SECP256k1) # rememeber this is private key, so we need to get the correspdnding wallet
-wallet = key.get_verifying_key().to_string().hex()
+def run():
+    header(NAME)
 
-key2 = SigningKey.generate(curve = SECP256k1)
-wallet2 = key2.get_verifying_key().to_string().hex()
+    chain = Blockchain()
 
-# creating a transaction
-tx_1 = Transaction(wallet, None, 0, tx_type='deploy_contract', contract_code=contract_code)
-tx_1.sign_transaction(key)
+    # set up some wallet for the testing
+    key1 = SigningKey.generate(curve=SECP256k1)
+    wallet1 = key1.get_verifying_key().to_string().hex()
 
-# now that this is all squared away, we can add it to the chain
-chain1.add_transaction(tx_1)
-# mine the block the tx currently is in (only block we have rn)
-chain1.mine_pending_transactions(wallet)
-contract_address = tx_1.calc_hash()
+    key2 = SigningKey.generate(curve=SECP256k1)
+    wallet2 = key2.get_verifying_key().to_string().hex()
 
-# since we are calling an exisitng contract, the arguments passed will be a little different
-tx_2 = Transaction(wallet, None, 0, tx_type='call_contract',contract_address=contract_address, function_name='create_escrow', function_args={'recipient': wallet2, 'value': 500 })
-tx_2.sign_transaction(key)
-escrow_id = chain1.add_transaction(tx_2) # remember we changed this to return the escrow_id
-chain1.mine_pending_transactions(wallet)
+    # deploy escrow contract
+    tx_deploy = Transaction(wallet1, None, 0, tx_type='deploy_contract', contract_code=contract_code)
+    tx_deploy.sign_transaction(key1)
+    try:
+        chain.add_transaction(tx_deploy)
+        chain.mine_pending_transactions(wallet1)
+        contract_address = tx_deploy.calc_hash()
+        log(True, f"Escrow contract deployed at {contract_address[:16]}...")
+    except Exception as e:
+        log(False, f"Deploy failed: {e}")
+        return
 
-# releasing escrow
-tx_3 = Transaction(wallet, None, 0, tx_type='call_contract', contract_address=contract_address, function_name = 'release_escrow', function_args={'escrow_id': escrow_id})
-tx_3.sign_transaction(key)
-chain1.add_transaction(tx_3)
-chain1.mine_pending_transactions(wallet)
+    # create escrow
+    tx_create = Transaction(wallet1, None, 0, tx_type='call_contract', contract_address=contract_address, function_name='create_escrow', function_args={'recipient': wallet2, 'value': 500})
+    tx_create.sign_transaction(key1)
+    try:
+        escrow_id = chain.add_transaction(tx_create)
+        chain.mine_pending_transactions(wallet1)
+        log(True, f"Escrow created: {escrow_id}")
+    except Exception as e:
+        log(False, f"Create escrow failed: {e}")
+        return
 
-contract = chain1.smart_contracts[contract_address]
-escrow = contract.state[escrow_id]
+    # release escrow
+    tx_release = Transaction(wallet1, None, 0, tx_type='call_contract', contract_address=contract_address, function_name='release_escrow', function_args={'escrow_id': escrow_id})
+    tx_release.sign_transaction(key1)
+    try:
+        chain.add_transaction(tx_release)
+        chain.mine_pending_transactions(wallet1)
+        log(True, "Escrow released")
+    except Exception as e:
+        log(False, f"Release escrow failed: {e}")
+        return
 
-# see what shakes
-print(f"Escrow: {escrow}")
-
+    # verify escrow state to make sure things hit right
+    contract = chain.smart_contracts[contract_address]
+    escrow = contract.state[escrow_id]
+    log(True, f"Escrow state: {escrow}")
+    log(chain.is_chain_valid(), "Chain valid after escrow operations")
