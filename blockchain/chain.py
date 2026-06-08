@@ -115,7 +115,7 @@ class Blockchain:
         if sender and sender not in trail:
             trail.append(sender)
 
-        return Transaction(sender, recipient, amount, parent_tx_hash, trail)
+        return Transaction(sender, recipient, amount, parent_tx_hash=parent_tx_hash, trail=trail)
     
     # uses hash to find a tx
     def find_transaction(self, tx_hash):
