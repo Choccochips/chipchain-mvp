@@ -14,12 +14,20 @@ class SmartContract():
         self.state = state or {}
         self.owner = owner
 
-    def execute(self, func_name, args, caller):
+    def execute(self, func_name, args, caller, chain = None):
         # check if the function exists in the code
         if func_name in self.code:
             # if so we call and pass args
             to_call = self.code[func_name]
-            return to_call(self.state, args, caller)
+
+            # check func signature
+            import inspect
+            sig = inspect.signature(to_call)
+
+            if 'chain' in sig.parameters:
+                return to_call(self.state, args, caller, chain)
+            else:
+                return to_call(self.state, args, caller)
         else:
             raise Exception('Function does not exist')
 
