@@ -19,12 +19,18 @@ import time
 
 from ecdsa import SigningKey, SECP256k1
 
+# just using the prefunded wallet as an admin for now. this will change later as the project evolves
+ALMIGHTY_WALLET = "7d077faca9b85e2feb19331266baa0ca59751ad6521e8958e85165510c4ad5ed9dc2c35d8975b049faf54c2ecf12ac3c667a2908674ade1297de471236f754a2"
+
 class Blockchain:
     def __init__(self):
         self.chain = []
 
         # start off chain w/ genesis block
         self.chain.append(self.create_genesis_block())
+
+        # add a list for admins of the chain, which from genesis will just be that one wallet that we are hard coding with tokens
+        self.admins = {ALMIGHTY_WALLET} 
 
         # set difficulty of mining, which will affect speed at which blocks can be created (AKA proof of work)
         self.difficulty = 5
@@ -42,7 +48,7 @@ class Blockchain:
     # a gensis block is the first block of a blockchain and requires some special handling
     def create_genesis_block(self):
         # need to harcode a starter wallet for testing
-        start_tx = Transaction(None, "7d077faca9b85e2feb19331266baa0ca59751ad6521e8958e85165510c4ad5ed9dc2c35d8975b049faf54c2ecf12ac3c667a2908674ade1297de471236f754a2", 1000)
+        start_tx = Transaction(None, ALMIGHTY_WALLET, 1000)
 
         return Block("05/14/2026", [start_tx], "0")
 
@@ -71,6 +77,10 @@ class Blockchain:
                     balance += transaction.amount
 
         return balance
+    
+    def get_all_wallets(self):
+        wallets = set()
+
 
 
     def is_chain_valid(self):
@@ -142,7 +152,7 @@ class Blockchain:
         # look for it in dict
         if addy in self.smart_contracts:
             # if we find the address we will execute the code
-            return self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address)
+            return self.smart_contracts[addy].execute(transaction.function_name, transaction.function_args, transaction.sender_address, chain = self)
         else:
             raise Exception("Smart contract is not present!")
         
