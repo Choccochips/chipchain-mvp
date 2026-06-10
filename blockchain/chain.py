@@ -81,7 +81,17 @@ class Blockchain:
     def get_all_wallets(self):
         wallets = set()
 
-
+        # walk through every block and every transaction in the chain
+        for block in self.chain:
+            for tx in block.transactions:
+                # add sender if it exists (skip None for mining rewards/genesis)
+                if tx.sender_address:
+                    wallets.add(tx.sender_address)
+                # add recipient if it exists
+                if tx.recip_address:
+                    wallets.add(tx.recip_address)
+        
+        return wallets
 
     def is_chain_valid(self):
         # loop through chain checking hash matches (curr into prev of next block)
