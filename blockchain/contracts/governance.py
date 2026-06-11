@@ -127,7 +127,7 @@ def resolve_proposal(state, args, caller, chain):
     for voter, choice in proposal['votes'].items():
         power = chain.get_balance(voter)
         # only count if they still have voting power
-        if power < chain.config['voting']['period_blocks']:
+        if power < chain.config['voting']['min_tokens']:
             continue
         if choice == 'yes':
             yes_power += power
