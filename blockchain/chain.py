@@ -25,25 +25,21 @@ ALMIGHTY_WALLET = "7d077faca9b85e2feb19331266baa0ca59751ad6521e8958e85165510c4ad
 class Blockchain:
     def __init__(self):
         self.chain = []
-
-        # start off chain w/ genesis block
         self.chain.append(self.create_genesis_block())
-
-        # add a list for admins of the chain, which from genesis will just be that one wallet that we are hard coding with tokens
-        self.admins = {ALMIGHTY_WALLET} 
-
-        # set difficulty of mining, which will affect speed at which blocks can be created (AKA proof of work)
-        self.difficulty = 5
-
-        # Transaction related portion of chain
-        # need a bucket for pending transactions while blocks are mined
+        self.admins = {ALMIGHTY_WALLET}
         self.pending_transactions = []
-
-        # dict to hold and search contracts
         self.smart_contracts = {}
-
-        # set up reward (coins later)
-        self.mining_reward = 100
+        
+        # central config store, governance can read and update these
+        self.config = {
+            'difficulty': 5,
+            'mining_reward': 100,
+            'voting': {
+                'min_tokens': 10,
+                'period_blocks': 5,
+                'quorum': 50
+            }
+        }
 
     # a gensis block is the first block of a blockchain and requires some special handling
     def create_genesis_block(self):
@@ -57,12 +53,12 @@ class Blockchain:
 
     def mine_pending_transactions(self, reward_address):
         new_block = Block(time.time(), self.pending_transactions, self.get_curr_block().hash)
-        new_block.mine_block(self.difficulty)
+        new_block.mine_block(self.config["difficulty"])
         print("Block has been mined!...")
         self.chain.append(new_block)
 
         # reset array since block was mined AND then pay the person who mined!
-        reward_owed = Transaction(None, reward_address, self.mining_reward)
+        reward_owed = Transaction(None, reward_address, self.config["mining_reward"])
         self.pending_transactions = [reward_owed]
 
     def get_balance(self,address):

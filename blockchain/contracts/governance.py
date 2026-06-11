@@ -6,11 +6,6 @@ voted on by anyone with voting power, and resolve based on a quorum + majority.
 
 """
 
-# constants for the chain rules
-MIN_TOKENS_FOR_VOTING = 10
-VOTING_PERIOD_BLOCKS = 5
-QUORUM = 50
-
 # check if a wallet is an admin (set at genesis)
 def is_admin(state, args, caller, chain):
     wallet = args['wallet']
@@ -22,7 +17,7 @@ def get_voting_power(state, args, caller, chain):
     balance = chain.get_balance(wallet)
 
     # no voting power if below threshold
-    if balance < MIN_TOKENS_FOR_VOTING:
+    if balance < chain.config['voting']['min_tokens']:
         return 0
     
     # voting power is just equal to balance (1:1)
@@ -38,7 +33,7 @@ def get_all_voters(state, args, caller, chain):
     # walk through all known wallets on the chain
     for wallet in chain.get_all_wallets():
         power = chain.get_balance(wallet)
-        if power >= MIN_TOKENS_FOR_VOTING:
+        if power >= chain.config['voting']['min_tokens']:
             voters[wallet] = power
     return voters
 
@@ -48,6 +43,7 @@ contract_code = {
     'get_admins': get_admins,
     'get_all_voters': get_all_voters
 }
+
 
 # create a new proposal, admin only
 def create_proposal(state, args, caller, chain):
@@ -91,11 +87,11 @@ def cast_vote(state, args, caller, chain):
 
     # check voter has voting power
     voter_power = chain.get_balance(caller)
-    if voter_power < MIN_TOKENS_FOR_VOTING:
+    if voter_power < chain.config['voting']['min_tokens']:
         raise Exception("Voter does not have enough voting power!...")
     
     # check voting period is still open
-    if len(chain.chain) > proposal['created_at_block'] + VOTING_PERIOD_BLOCKS:
+    if len(chain.chain) > proposal['created_at_block'] + chain.config['voting']['period_blocks']:
         raise Exception("Voting period has ended!...")
 
     # check if already voted - reject re-votes for now
@@ -116,7 +112,7 @@ def resolve_proposal(state, args, caller, chain):
     proposal = state['proposals'][proposal_id]
 
     # cant resolve if voting period is still going
-    if len(chain.chain) <= proposal['created_at_block'] + VOTING_PERIOD_BLOCKS:
+    if len(chain.chain) <= proposal['created_at_block'] + chain.config['voting']['period_blocks']:
         raise Exception("Voting period is still open!...")
     
     # already resolved
@@ -131,7 +127,7 @@ def resolve_proposal(state, args, caller, chain):
     for voter, choice in proposal['votes'].items():
         power = chain.get_balance(voter)
         # only count if they still have voting power
-        if power < MIN_TOKENS_FOR_VOTING:
+        if power < chain.config['voting']['period_blocks']:
             continue
         if choice == 'yes':
             yes_power += power
@@ -142,7 +138,7 @@ def resolve_proposal(state, args, caller, chain):
 
     # check quorum (total participating power)
     total_power = yes_power + no_power + abstain_power
-    if total_power < QUORUM:
+    if total_power < chain.config['voting']['quorum']:
         proposal['status'] = 'failed_quorum'
     elif yes_power > no_power:
         proposal['status'] = 'passed'
