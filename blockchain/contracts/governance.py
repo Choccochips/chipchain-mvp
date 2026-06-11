@@ -37,14 +37,6 @@ def get_all_voters(state, args, caller, chain):
             voters[wallet] = power
     return voters
 
-contract_code = {
-    'is_admin': is_admin,
-    'get_voting_power': get_voting_power,
-    'get_admins': get_admins,
-    'get_all_voters': get_all_voters
-}
-
-
 # create a new proposal, admin only
 def create_proposal(state, args, caller, chain):
     # only admins can propose
