@@ -10,12 +10,30 @@ from blockchain.transaction import Transaction
 # need to import 
 from blockchain.contracts.escrow import contract_code as escrow_code
 from blockchain.contracts.impact import contract_code as impact_code
+from blockchain.contracts.governance import contract_code as governance_code
 
 # keys
 from ecdsa import SigningKey, SECP256k1
 
+ALMIGHTY_WALLET = 'd9e56bb00aa6372b1dbafacc815c083ad50635ee477588a4135a9f22c484e271'
+
+
+
 # chain instance to persist for curr testing
 chip_chain = Blockchain()
+
+# deploy governance on startup so all routes know the address
+def deploy_governance():
+    key = SigningKey.from_string(bytes.fromhex(ALMIGHTY_WALLET), curve=SECP256k1)
+    sender = key.get_verifying_key().to_string().hex()
+    tx = Transaction(sender, None, 0, tx_type='deploy_contract', contract_code=governance_code)
+    tx.sign_transaction(key)
+    chip_chain.add_transaction(tx)
+    chip_chain.mine_pending_transactions(sender)
+    return tx.calc_hash()
+
+governance_address = deploy_governance()
+print(f"Governance deployed at {governance_address[:16]}...")
 
 
 app = Flask(__name__)
@@ -175,6 +193,105 @@ def get_contract_state(address):
         return jsonify(chip_chain.smart_contracts[address].state)
     return jsonify({'message': 'Smart contract not found!...'}), 400
         
+# governance routes
+
+@app.route('/governance/proposals')
+def get_proposals():
+    # read straight from contract state, no signing needed for queries
+    contract = chip_chain.smart_contracts.get(governance_address)
+    proposals = contract.state.get('proposals', {})
+    return jsonify(proposals)
+
+@app.route('/governance/proposal/<proposal_id>')
+def get_proposal(proposal_id):
+    contract = chip_chain.smart_contracts.get(governance_address)
+    proposal = contract.state.get('proposals', {}).get(proposal_id)
+    if not proposal:
+        return jsonify({'message': 'Proposal not found!...'}), 404
+    return jsonify(proposal)
+
+@app.route('/governance/proposal', methods=['POST'])
+def create_proposal():
+    data = request.get_json()
+    try:
+        key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
+        sender = key.get_verifying_key().to_string().hex()
+
+        # build args from request, default to signal if no action passed
+        function_args = {
+            'title': data['title'],
+            'description': data.get('description', ''),
+            'action': data.get('action', {'type': 'signal', 'args': {}})
+        }
+
+        tx = Transaction(sender, None, 0, tx_type='call_contract', contract_address=governance_address, function_name='create_proposal', function_args=function_args)
+        tx.sign_transaction(key)
+        proposal_id = chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(sender)
+        return jsonify({'message': 'Proposal created!...', 'proposal_id': proposal_id})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+@app.route('/governance/vote', methods=['POST'])
+def cast_vote():
+    data = request.get_json()
+    try:
+        key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
+        sender = key.get_verifying_key().to_string().hex()
+
+        function_args = {
+            'proposal_id': data['proposal_id'],
+            'choice': data['choice']
+        }
+
+        tx = Transaction(sender, None, 0, tx_type='call_contract', contract_address=governance_address, function_name='cast_vote', function_args=function_args)
+        tx.sign_transaction(key)
+        choice = chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(sender)
+        return jsonify({'message': 'Vote cast!...', 'choice': choice})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+@app.route('/governance/resolve', methods=['POST'])
+def resolve_proposal():
+    data = request.get_json()
+    try:
+        key = SigningKey.from_string(bytes.fromhex(data['private_key']), curve=SECP256k1)
+        sender = key.get_verifying_key().to_string().hex()
+
+        function_args = {'proposal_id': data['proposal_id']}
+
+        tx = Transaction(sender, None, 0, tx_type='call_contract', contract_address=governance_address, function_name='resolve_proposal', function_args=function_args)
+        tx.sign_transaction(key)
+        status = chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(sender)
+        return jsonify({'message': 'Proposal resolved!...', 'status': status})
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
+
+@app.route('/governance/voting_power/<address>')
+def get_voting_power(address):
+    # apply the threshold rule directly, same logic as the contract
+    balance = chip_chain.get_balance(address)
+    min_tokens = chip_chain.config['voting']['min_tokens']
+    power = balance if balance >= min_tokens else 0
+    return jsonify({'address': address, 'voting_power': power})
+
+@app.route('/governance/admins')
+def get_admins():
+    return jsonify({'admins': list(chip_chain.admins)})
+
+@app.route('/governance/voters')
+def get_voters():
+    # walk every wallet on the chain and return the ones with enough tokens
+    min_tokens = chip_chain.config['voting']['min_tokens']
+    voters = {}
+    for wallet in chip_chain.get_all_wallets():
+        balance = chip_chain.get_balance(wallet)
+        if balance >= min_tokens:
+            voters[wallet] = balance
+    return jsonify(voters)
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)
