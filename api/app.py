@@ -1,4 +1,5 @@
-from flask import Flask,jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy 
 
 # get my classes from built modules
@@ -18,6 +19,8 @@ chip_chain = Blockchain()
 
 
 app = Flask(__name__)
+# allow React frontend on a different port to talk to this API
+CORS(app)
 
 @app.route('/')
 def index():
