@@ -77,6 +77,7 @@ def create_transaction():
         tx = chip_chain.create_tracked_transaction(sender, data['recipient'], data['amount'], parent_hash)
         tx.sign_transaction(signing_key)
         chip_chain.add_transaction(tx)
+        chip_chain.mine_pending_transactions(sender)
         return jsonify({'message': 'Transaction added!', 'tx_hash': tx.calc_hash()})
     except Exception as e:
         return jsonify({'message': str(e)}), 400
