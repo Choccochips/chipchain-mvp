@@ -201,7 +201,20 @@ def get_proposals():
     # read straight from contract state, no signing needed for queries
     contract = chip_chain.smart_contracts.get(governance_address)
     proposals = contract.state.get('proposals', {})
-    return jsonify(proposals)
+
+    # weight each vote by the voter's current voting power so the ui can show real numbers
+    min_tokens = chip_chain.config['voting']['min_tokens']
+    enriched = {}
+    for pid, p in proposals.items():
+        tally = {'yes': 0, 'no': 0, 'abstain': 0}
+        for voter, choice in (p.get('votes') or {}).items():
+            if choice not in tally:
+                continue
+            balance = chip_chain.get_balance(voter)
+            power = balance if balance >= min_tokens else 0
+            tally[choice] += power
+        enriched[pid] = {**p, 'tally': tally}
+    return jsonify(enriched)
 
 @app.route('/governance/proposal/<proposal_id>')
 def get_proposal(proposal_id):
