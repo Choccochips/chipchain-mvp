@@ -293,6 +293,10 @@ def get_voters():
             voters[wallet] = balance
     return jsonify(voters)
 
+@app.route('/governance/config', methods=['GET'])
+def get_governance_config():
+    return jsonify(chip_chain.config)
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', debug = True)
